@@ -35,10 +35,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * This is the contract mean to be governed by DSCEngine. This contract is just the ERC20
  * implementation of our stablecoin system
  */
-contract DecentralizedStablCoin is ERC20Burnable, Ownable {
-    error DecentralizedStablCoin__MustBeMoreThanZero();
-    error DecentralizedStablCoin__BurnExceedsBalance();
-    error DecentralizedStablCoin__NotZeroAddress();
+contract DecentralizedStableCoin is ERC20Burnable, Ownable {
+    error DecentralizedStableCoin__MustBeMoreThanZero();
+    error DecentralizedStableCoin__BurnExceedsBalance();
+    error DecentralizedStableCoin__NotZeroAddress();
 
     constructor()
         ERC20("DecentralizedStableCoin", "DSC")
@@ -48,10 +48,10 @@ contract DecentralizedStablCoin is ERC20Burnable, Ownable {
     function burn(uint256 _amount) public override onlyOwner {
         uint256 balance = balanceOf(msg.sender);
         if (_amount <= 0) {
-            revert DecentralizedStablCoin__MustBeMoreThanZero();
+            revert DecentralizedStableCoin__MustBeMoreThanZero();
         }
         if (balance < _amount) {
-            revert DecentralizedStablCoin__BurnExceedsBalance();
+            revert DecentralizedStableCoin__BurnExceedsBalance();
         }
         super.burn(_amount);
     }
@@ -61,10 +61,10 @@ contract DecentralizedStablCoin is ERC20Burnable, Ownable {
         uint256 _amount
     ) external onlyOwner returns (bool) {
         if (_to == address(0)) {
-            revert DecentralizedStablCoin__NotZeroAddress();
+            revert DecentralizedStableCoin__NotZeroAddress();
         }
         if (_amount <= 0) {
-            revert DecentralizedStablCoin__MustBeMoreThanZero();
+            revert DecentralizedStableCoin__MustBeMoreThanZero();
         }
         _mint(_to, _amount);
         return true;
