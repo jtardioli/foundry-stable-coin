@@ -31,12 +31,16 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine_TokenAddressesAndPriceFeedAddressesMustBeSameLength();
     error DSCEngine__NotAllowedToken();
     error DSCEngine__TransferFailed();
+    error DSCEngine_BRreaksHealthFactor(uint256 healthFactor);
 
     ////////////////////////
     // State Variables    //
     ////////////////////////
     uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
     uint256 private constant PRECISION = 1e18;
+    uint256 private constant LIQUIDATION_THRESHOLD = 50;
+    uint256 private constant LIQUIDATION_PRECISION = 100;
+    uint256 private constant MIN_HEALTH_FACTOR = 100;
 
     mapping(address token => address priceFeed) private s_priceFeeds;
     mapping(address user => mapping(address token => uint256 amount)) private s_collateralDeposited;
@@ -157,10 +161,16 @@ contract DSCEngine is ReentrancyGuard {
         // get total dsc minted
         // get total collateral VALUE
         (uint256 totalDscMinted, uint256 collteralValueInUsd) = _getAccountInformation(user);
+        uint256 collateralAdjustedForThreshold = (collteralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
     function _revertIfHealthFactorIsBroken(address user) internal view {
+        uint256 userHealthFactor = _healthFactor(user);
+        if (userHealthFactor < MIN_HEALTH_FACTOR) revert DSCEngine_BRreaksHealthFactor(userHealthFactor);
+
         // 1. check health factor (do they have enough collateral)
+
         // 2. revert if they dont have enough collateral
     }
 
