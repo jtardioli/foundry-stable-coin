@@ -22,7 +22,6 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
  * @notice This contract is the ore of the DSC System. It handles all the logic for minting and redeeming DSC as well as depositing and withdrawing colateral
  * @notice this contract is VERY loosely based on the MakerDAO DSS (DAI) system
  */
-
 contract DSCEngine is ReentrancyGuard {
     //////////////////
     // Errors    //
@@ -32,6 +31,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__NotAllowedToken();
     error DSCEngine__TransferFailed();
     error DSCEngine_BRreaksHealthFactor(uint256 healthFactor);
+    error DSCEngine__MintFailed();
 
     ////////////////////////
     // State Variables    //
@@ -132,6 +132,10 @@ contract DSCEngine is ReentrancyGuard {
         s_DscMinted[msg.sender] += amountDscToMint;
         // if they minted too much
         _revertIfHealthFactorIsBroken(msg.sender);
+        bool minted = i_dsc.mint(msg.sender, amountDscToMint);
+        if (!minted) {
+            revert DSCEngine__MintFailed();
+        }
     }
 
     function burnDsc() external {}
