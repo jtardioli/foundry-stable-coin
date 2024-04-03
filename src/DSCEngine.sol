@@ -53,6 +53,7 @@ contract DSCEngine is ReentrancyGuard {
     // Events    //
     ////////////////////////
     event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
+    event CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
 
     //////////////////
     // Modifiers    //
@@ -126,9 +127,26 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function redeemCollateralForDsc() external {}
+    function redeemCollateralForDsc(address tokenCollateralAddress, uint256 amountCollateral, uint256 amountDscToBurn)
+        external
+    {
+        redeemCollateral(tokenCollateralAddress, amountCollateral);
+        burnDsc(amountDscToBurn);
+    }
 
-    function redeemCollateral() external {}
+    // in order to reddem collateral
+    // 1. health factor must be above 1 after collateral pulled
+    function redeemCollateral(address tokenCollateralAddresss, uint256 amountCollateral) public {
+        s_collateralDeposited[msg.sender][tokenCollateralAddresss] -= amountCollateral;
+        emit CollateralRedeemed(msg.sender, tokenCollateralAddresss, amountCollateral);
+
+        bool success = IERC20(tokenCollateralAddresss).transfer(msg.sender, amountCollateral);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     // function mintDsc(uint256 amountDscToMint) external moreThanZero(amountDscToMint) nonReentrant {
     //     s_DscMinted[msg.sender] += amountDscToMint;
@@ -151,7 +169,15 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function burnDsc() external {}
+    function burnDsc(uint256 amount) public moreThanZero(amount) {
+        s_DscMinted[msg.sender] -= amount;
+        bool success = i_dsc.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        i_dsc.burn(amount);
+        _revertIfHealthFactorIsBroken(msg.sender); // dont think this would ever happen...
+    }
 
     function liquidate() external {}
 
