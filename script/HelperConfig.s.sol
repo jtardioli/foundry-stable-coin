@@ -54,7 +54,7 @@ contract HelperConfig is Script {
         ERC20Mock wbtcMock = new ERC20Mock();
         wbtcMock.mint(msg.sender, 1000e8);
 
-        vm.startBroadcast();
+        vm.stopBroadcast();
 
         return NetworkConfig({
             wethUsdPriceFeed: address(wethUsdPriceFeed),
