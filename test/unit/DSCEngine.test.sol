@@ -25,7 +25,7 @@ contract DSCEngineTest is Test {
         deployer = new DeployDSC();
         (dsc, dsce, config) = deployer.run();
         (ethUsdPriceFeed, btcUsdPriceFeed, weth,,) = config.activeNetworkConfig();
-        ERC20Mock(weth).mint(address(this), STARTING_ERC20_BALANCE);
+        ERC20Mock(weth).mint(address(user), STARTING_ERC20_BALANCE);
     }
 
     //////////////////////////
@@ -65,7 +65,7 @@ contract DSCEngineTest is Test {
     }
 
     //////////////////////////
-    // Deposit Collateral Tests
+    // depositCollateral()
     //////////////////////////
 
     function testRevertsIfCollateralZero() public {
@@ -85,5 +85,49 @@ contract DSCEngineTest is Test {
 
         dsce.depositCollateral(address(ranToken), AMOUNT_COLLATERAL);
         vm.stopPrank();
+    }
+
+    modifier depositedCollateral() {
+        vm.startPrank(user);
+        ERC20Mock(weth).approve(address(dsce), AMOUNT_COLLATERAL);
+        dsce.depositCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+        _;
+    }
+
+    function testCanDepositCollateralAndGetAccountInfo() public depositedCollateral {
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(user);
+
+        uint256 expectedTotalDscMinted = 0;
+        uint256 expectedDepositAmount = dsce.getTokenAmountFromUsd(weth, collateralValueInUsd);
+
+        assertEq(totalDscMinted, expectedTotalDscMinted);
+        assertEq(AMOUNT_COLLATERAL, expectedDepositAmount);
+    }
+
+    //////////////////////////
+    // mintDsc()
+    //////////////////////////
+
+    function testMintDscRevertsIfAmountZero() public {
+        vm.expectRevert(DSCEngine.DSCEngine__NeedsMoreThanZero.selector);
+        dsce.mintDsc(0);
+    }
+
+    function testMintDscRevertIfHealthFactorBroken() public depositedCollateral {
+        vm.startPrank(user);
+        bytes memory expectedRevertData = abi.encodeWithSelector(
+            DSCEngine.DSCEngine_BRreaksHealthFactor.selector,
+            uint256(50000000000000000) // 5e16 as uint256
+        );
+
+        // Expect the encoded revert
+        vm.expectRevert(expectedRevertData);
+        dsce.mintDsc(2000e20);
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(user);
+        uint256 hf = dsce.getHealthFactor();
+        vm.stopPrank();
+
+        console.log(totalDscMinted, collateralValueInUsd, hf);
     }
 }

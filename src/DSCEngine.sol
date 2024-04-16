@@ -207,7 +207,9 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function getHealthFactor() external view {}
+    function getHealthFactor() external view returns (uint256) {
+        return _healthFactor(msg.sender);
+    }
 
     /////////////////////////////////////////
     /// Private & Internal View Functions //
@@ -251,6 +253,7 @@ contract DSCEngine is ReentrancyGuard {
         // get total dsc minted
         // get total collateral VALUE
         (uint256 totalDscMinted, uint256 collteralValueInUsd) = _getAccountInformation(user);
+        if (totalDscMinted == 0) return type(uint256).max;
         uint256 collateralAdjustedForThreshold = (collteralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
@@ -291,5 +294,13 @@ contract DSCEngine is ReentrancyGuard {
         // 1 ETH = $1000
         // retruned value from chainlink will be 1000 * 1e8
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
+    }
+
+    function getAccountInformation(address user)
+        external
+        view
+        returns (uint256 totalDscMinted, uint256 collateralValueInUsd)
+    {
+        return _getAccountInformation(user);
     }
 }
