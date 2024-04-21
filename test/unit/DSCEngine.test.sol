@@ -120,14 +120,30 @@ contract DSCEngineTest is Test {
             DSCEngine.DSCEngine_BRreaksHealthFactor.selector,
             uint256(50000000000000000) // 5e16 as uint256
         );
-
         // Expect the encoded revert
         vm.expectRevert(expectedRevertData);
         dsce.mintDsc(2000e20);
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(user);
         uint256 hf = dsce.getHealthFactor();
         vm.stopPrank();
+    }
 
-        console.log(totalDscMinted, collateralValueInUsd, hf);
+    function testMintDsc() public depositedCollateral {
+        vm.startPrank(user);
+
+        dsce.mintDsc(2000);
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(user);
+        uint256 expectedTotalDscMinted = 2000;
+        assertEq(totalDscMinted, expectedTotalDscMinted);
+        vm.stopPrank();
+    }
+
+    //////////////////////////
+    // burnDSC()
+    //////////////////////////
+
+    function testBurnDscRevertsIfAmountZero() public {
+        vm.expectRevert(DSCEngine.DSCEngine__NeedsMoreThanZero.selector);
+        dsce.burnDsc(0);
     }
 }
